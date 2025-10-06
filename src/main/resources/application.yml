@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: CONSUMER-SERVICES
+  datasource:
+    url: jdbc:mysql://localhost:3306/ConsumerServices?createDatabaseIfNotExist=true
+    username: root
+    password: Abhinav1423
+  jpa:
+    hibernate.ddl-auto: update
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    service-url:
+      defaultZone: http://localhost:8090/eureka
+server:
+  port: 8086
