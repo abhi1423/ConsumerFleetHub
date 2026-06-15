@@ -39,6 +39,4 @@ public class LoadQuery
 	@JsonManagedReference("loadquery-reuqest")
 	@OneToOne(cascade=CascadeType.ALL)
 	RequestToTransporter requestToTransorter;
-	
-	
 }

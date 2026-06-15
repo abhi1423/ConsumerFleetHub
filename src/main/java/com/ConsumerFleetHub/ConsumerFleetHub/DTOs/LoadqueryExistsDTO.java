@@ -10,18 +10,28 @@ import org.springframework.http.HttpStatus;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class ResponseFomTransporter 
+public class LoadqueryExistsDTO 
 {
-	String transporter;
-	String username;
-	boolean response;
+	String msg;
+	HttpStatus httpcode;
+	boolean isExists;
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class UserNotFoundDTO
+    public static class LoadqueryNotFoundDTO {
+        String msg;
+        HttpStatus httpcode;
+        boolean isExists;
+
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserAlreadyExistsDTO
     {
         String msg;
         HttpStatus httpcode;

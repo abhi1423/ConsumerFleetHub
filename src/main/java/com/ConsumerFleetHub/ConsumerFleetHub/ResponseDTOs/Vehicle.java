@@ -13,20 +13,12 @@ import lombok.Setter;
 public class Vehicle {
 
 	String carrierNumber;
-	
-	String carrierCategory; 
-	
-	
+	String carrierCategory;
 	String fuelType;
-	
 	boolean IsAvailable;
-	
 	String model;
-	
 	int numberOfAxcels;
-	
 	long capacityloadInTonsMin;
 	long capacityloadInTonsMax;
-
 	Transporter transporter;
 }
