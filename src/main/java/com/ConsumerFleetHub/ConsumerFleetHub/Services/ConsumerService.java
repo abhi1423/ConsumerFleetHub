@@ -16,29 +16,41 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.UUID;
 
-
 @Service
-public class ConsumerService
+public class ConsumerService implements IConsumerService
 {
-	@Autowired
-    ConsumerRepository consumerRepository;
-	
-	@Autowired
-    LoadqueriesRepository loadqueriesRepository;
-	
-	@Autowired
-    RequestRepository requestRepository;
-	
-    private final RestTemplate restTemplate;
-    public ConsumerService(RestTemplate restTemplate) {
+    private  ConsumerRepository consumerRepository;
+
+    private  LoadqueriesRepository loadqueriesRepository;
+
+    private  RequestRepository requestRepository;
+
+    private  RestTemplate restTemplate;
+
+    private PasswordEncoder passwordEncoder;
+
+    public ConsumerService(
+            ConsumerRepository consumerRepository,
+            LoadqueriesRepository loadqueriesRepository,
+            RequestRepository requestRepository,
+            RestTemplate restTemplate,
+            PasswordEncoder passwordEncoder)
+    {
+        this.consumerRepository = consumerRepository;
+        this.loadqueriesRepository = loadqueriesRepository;
+        this.requestRepository = requestRepository;
         this.restTemplate = restTemplate;
+        this.passwordEncoder = passwordEncoder;
     }
+
 	public Consumer saveUser(Consumer consumer)
 	{
 		String id=UUID.randomUUID().toString();
@@ -52,7 +64,11 @@ public class ConsumerService
 		if(lq!=null)
 		{
 			lq.setId(UUID.randomUUID().toString());
-			lq.setConsumer(consumer);		}
+			lq.setConsumer(consumer);
+        }
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String password = encoder.encode(consumer.getPassword());
+        consumer.setPassword(password);
 		return consumerRepository.save(consumer);
 	}
 
@@ -71,11 +87,12 @@ public class ConsumerService
 	{
 		return consumerRepository.findAll();
 	}
+
 	public List<LoadQuery> getAllPendigsQueries()
 	{
 		return consumerRepository.findUnresolvedQueries();
-		
 	}
+
 	public Consumer getConsumer(String username)
 	{
 		Consumer c = consumerRepository.findByUsername(username).orElse(null);
@@ -85,11 +102,11 @@ public class ConsumerService
 		}
 		return c;
 	}
+
 	public List<Consumer> getAllCosumersWithPendingQueries()
 	{
 		return consumerRepository.findUsersWithPendingQueries();
 	}
-
 	
 	@Transactional
 	public ResponseEntity<List<Vehicle>> createLoadQuery(String username,LoadQuery query)

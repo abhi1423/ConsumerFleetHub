@@ -13,13 +13,10 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Transporter
 {
-
 	String id;
 	String password;
 	String username;
 	String phoneNumber;
 	String city;
 	String pincode;
-	
-
 }

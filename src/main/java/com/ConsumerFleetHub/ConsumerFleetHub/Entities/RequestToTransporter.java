@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 @Table(name="RequestToTransporter")
 public class RequestToTransporter 
 {
-	
 	@Id
 	@Column
 	@GeneratedValue(strategy=GenerationType.AUTO)
