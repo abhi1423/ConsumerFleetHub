@@ -32,17 +32,15 @@ public class ConsumerController
 	@PostMapping("/add")
 	public ResponseEntity<Consumer> saveUser(@RequestBody Consumer consumer)
 	{
-		Consumer c=consumerService.saveUser(consumer,"CONSUMER");
+		Consumer c=consumerService.saveUser(consumer,"ROLE_CONSUMER");
 		return new ResponseEntity<Consumer>(c,HttpStatus.CREATED);
 	}
     @PostMapping("/add/admin")
     public ResponseEntity<Consumer> saveUserAsAdmin(@RequestBody Consumer consumer)
     {
-        Consumer c=consumerService.saveUser(consumer,"ADMIN");
+        Consumer c=consumerService.saveUser(consumer,"ROLE_ADMIN");
         Set<Role> roles = c.getRoles();
         roles.clear();
-
-
         return new ResponseEntity<Consumer>(c,HttpStatus.CREATED);
     }
 	@PutMapping("/remove/query/{username}")
@@ -78,7 +76,7 @@ public class ConsumerController
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
     @GetMapping("/get/{username}")
-	public ResponseEntity<Consumer> getByUsername(String username)
+	public ResponseEntity<Consumer> getByUsername(@PathVariable String username)
 	{
     	Consumer c = consumerService.getConsumer(username);
     	return new ResponseEntity<Consumer>(c,HttpStatus.OK);
