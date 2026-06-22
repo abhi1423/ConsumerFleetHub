@@ -1,6 +1,7 @@
 package com.abhinav.ConsumerFleetHub.Services;
 
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
+import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
 import com.abhinav.ConsumerFleetHub.Entities.*;
 import com.abhinav.ConsumerFleetHub.Exceptions.UserAlreadyExistsException;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 
@@ -28,7 +30,7 @@ public class ConsumerService implements IConsumerService
 
     private  RequestRepository requestRepository;
 
-    private  RestTemplate restTemplate;
+    private WebClient.Builder webClient;
 
     private PasswordEncoder passwordEncoder;
 
@@ -36,13 +38,13 @@ public class ConsumerService implements IConsumerService
             ConsumerRepository consumerRepository,
             LoadqueriesRepository loadqueriesRepository,
             RequestRepository requestRepository,
-            RestTemplate restTemplate,
+            WebClient.Builder webClient,
             PasswordEncoder passwordEncoder)
     {
         this.consumerRepository = consumerRepository;
         this.loadqueriesRepository = loadqueriesRepository;
         this.requestRepository = requestRepository;
-        this.restTemplate = restTemplate;
+        this.webClient = webClient;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -108,29 +110,44 @@ public class ConsumerService implements IConsumerService
 	}
 	
 	@Transactional
-	public ResponseEntity<List<Vehicle>> createLoadQuery(String username,LoadQuery query)
+	public ResponseEntity<List<Vehicle>> createLoadQuery(String username, LoadQueryDto queryDto)
 	{
-		String city=query.getSource();
-		long loadRequired=query.getLoadInTons();
+        LoadQuery loadQuery = LoadQuery.builder()
+                .id(UUID.randomUUID().toString())
+                .loadInTons(queryDto.getLoadInTons())
+                .source(queryDto.getSource())
+                .destination(queryDto.getDestination())
+                .isResolved(false)
+                .status(RequestStatus.inProgress)
+                .build();
+
+
 		Consumer c=consumerRepository.findByUsername(username).orElse(null);
 		if(c==null)
 		{
 			throw new UserNotFoundException("User not found with this username");
 		}
-		String id=UUID.randomUUID().toString();
-		query.setId(id);
-		c.setQuery(query);
+
+		c.setQuery(loadQuery);
 		consumerRepository.save(c);
-		System.out.println("City name is "+city);
-		String url="http://GOOD-CARRIER/transporter/get/vehilceFromCity/"+city+"/"+loadRequired; 
-		ResponseEntity<List<Vehicle>> vehicles = restTemplate.exchange(url,HttpMethod.GET,null,new ParameterizedTypeReference<List<Vehicle>>() {});
-		return vehicles;
+		//String url="http://GOOD-CARRIER/transporter/get/vehilceFromCity/"+city+"/"+loadRequired;
+		//ResponseEntity<List<Vehicle>> vehicles = restTemplate.exchange(url,HttpMethod.GET,null,new ParameterizedTypeReference<List<Vehicle>>() {});
+
+        List<Vehicle> vehicles = webClient.build().get()
+                .uri("http://Fleet-Hub/transporter/get/vehilceFromCity/{city}/{loadRequired}",queryDto.getSource(),queryDto.getLoadInTons())
+                .retrieve()
+                .bodyToFlux(Vehicle.class)
+                .collectList()
+                .block();
+
+
+        return new ResponseEntity<>(vehicles,HttpStatus.OK);
 	}
 
 	
 	public ResponseEntity<Vehicle> bookMyVehicle(String vehicle_number, String userId)
     {
-    	String url = "http://GOOD-CARRIER/transporter/bookMyVehicle/"+vehicle_number;
+    	String url = "http://Fleet-Hub/transporter/bookMyVehicle/"+vehicle_number;
     	Consumer user = consumerRepository.findByUsername(userId).orElse(null);
     	RequestToTransporter requestToTransporter= RequestToTransporter.builder().username(user.getUsername()).loads(user.getQuery()
     			.getLoadInTons()).source(user.getQuery().getSource()).
@@ -142,8 +159,15 @@ public class ConsumerService implements IConsumerService
     	HttpHeaders headers = new HttpHeaders();
     	headers.setContentType(MediaType.APPLICATION_JSON);
     	HttpEntity<RequestToTransporter> request = new HttpEntity<>(requestToTransporter, headers);
-    	ResponseEntity<Vehicle> response = restTemplate.exchange(url, HttpMethod.POST,request,Vehicle.class);
-    	return response;
+
+        Vehicle getVehicle = webClient.build()
+                .post()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Vehicle.class)
+                .block();
+
+    	return new ResponseEntity<>(getVehicle,HttpStatus.OK);
     }
 	
 	@Transactional

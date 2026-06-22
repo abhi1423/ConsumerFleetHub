@@ -1,6 +1,7 @@
 package com.abhinav.ConsumerFleetHub.Services;
 
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
+import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
 import com.abhinav.ConsumerFleetHub.Entities.Consumer;
 import com.abhinav.ConsumerFleetHub.Entities.LoadQuery;
@@ -23,7 +24,7 @@ public interface IConsumerService
 
     List<Consumer> getAllCosumersWithPendingQueries();
 
-    ResponseEntity<List<Vehicle>> createLoadQuery(String username, LoadQuery query);
+    ResponseEntity<List<Vehicle>> createLoadQuery(String username, LoadQueryDto queryDto);
 
     ResponseEntity<Vehicle> bookMyVehicle(String vehicle_number, String userId);
 
