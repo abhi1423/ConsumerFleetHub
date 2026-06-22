@@ -1,12 +1,13 @@
 package com.abhinav.ConsumerFleetHub.Controller;
 
+import com.abhinav.ConsumerFleetHub.DTOs.ConsumerDto;
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
 import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
 import com.abhinav.ConsumerFleetHub.Entities.Consumer;
 import com.abhinav.ConsumerFleetHub.Entities.LoadQuery;
 import com.abhinav.ConsumerFleetHub.Entities.Role;
-import com.abhinav.ConsumerFleetHub.ResponseDTOs.Vehicle;
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetails;
 import com.abhinav.ConsumerFleetHub.Services.ConsumerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,30 +33,23 @@ public class ConsumerController
 	 * getAllQueries
     */
 	@PostMapping("/add")
-	public ResponseEntity<Consumer> saveUser(@RequestBody Consumer consumer)
+	public ResponseEntity<String> saveUser(@RequestBody ConsumerDto consumerDto)
 	{
-		Consumer c=consumerService.saveUser(consumer,"ROLE_CONSUMER");
-		return new ResponseEntity<Consumer>(c,HttpStatus.CREATED);
+		Consumer c=consumerService.saveUser(consumerDto,"ROLE_CONSUMER");
+		return new ResponseEntity<>("Consumer created successfully",HttpStatus.CREATED);
 	}
-    @PostMapping("/add/admin")
-    public ResponseEntity<Consumer> saveUserAsAdmin(@RequestBody Consumer consumer)
-    {
-        Consumer c=consumerService.saveUser(consumer,"ROLE_ADMIN");
-        Set<Role> roles = c.getRoles();
-        roles.clear();
-        return new ResponseEntity<Consumer>(c,HttpStatus.CREATED);
-    }
+
 	@PutMapping("/remove/query/{username}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
-	public ResponseEntity<Consumer> removeQuery(@PathVariable String username)
+	public ResponseEntity<String> removeQuery(@PathVariable String username)
 	{
 		Consumer c = consumerService.removeLoadQuery(username);
-		return new ResponseEntity<Consumer>(c,HttpStatus.OK);
+		return new ResponseEntity<>("The LoadQuery has been  removed successfully",HttpStatus.OK);
 		
 	}
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
 	@PutMapping("/create/query/{username}") 
-	public ResponseEntity<List<Vehicle>> createLoadQuery(@PathVariable String username,@Valid @RequestBody LoadQueryDto lq)
+	public ResponseEntity<List<VehicleAndTransporterDetails>> createLoadQuery(@PathVariable String username,@Valid @RequestBody LoadQueryDto lq)
 	{
         return consumerService.createLoadQuery(username, lq);
 		
@@ -92,8 +86,8 @@ public class ConsumerController
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
-    @GetMapping("/getVehicle/{userId}/{vehicle_number}")
-    public ResponseEntity<Vehicle> postVehicleRequest(@PathVariable String userId,@PathVariable String vehicle_number)
+    @PostMapping("/bookVehicle/{userId}/{vehicle_number}")
+    public ResponseEntity<VehicleAndTransporterDetails> postVehicleRequest(@PathVariable String userId, @PathVariable String vehicle_number)
     {
     	return consumerService.bookMyVehicle(vehicle_number, userId);
     }
@@ -110,6 +104,14 @@ public class ConsumerController
     public ResponseEntity<EndTrip> closeTrip(@RequestBody EndTrip endTrip)
     {
     	return consumerService.closeTrip(endTrip);
+    }
+    @PostMapping("/add/admin")
+    public ResponseEntity<String> saveUserAsAdmin(@RequestBody ConsumerDto consumerDto)
+    {
+        Consumer c=consumerService.saveUser(consumerDto,"ROLE_ADMIN");
+        Set<Role> roles = c.getRoles();
+        roles.clear();
+        return new ResponseEntity<>("Consumer created successfully",HttpStatus.CREATED);
     }
     
 }

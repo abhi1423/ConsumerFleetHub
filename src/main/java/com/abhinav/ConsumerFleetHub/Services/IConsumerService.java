@@ -1,18 +1,19 @@
 package com.abhinav.ConsumerFleetHub.Services;
 
+import com.abhinav.ConsumerFleetHub.DTOs.ConsumerDto;
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
 import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
 import com.abhinav.ConsumerFleetHub.Entities.Consumer;
 import com.abhinav.ConsumerFleetHub.Entities.LoadQuery;
-import com.abhinav.ConsumerFleetHub.ResponseDTOs.Vehicle;
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetails;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 public interface IConsumerService
 {
-    Consumer saveUser(Consumer consumer,String role);
+    Consumer saveUser(ConsumerDto consumerDto, String role);
 
     Consumer removeLoadQuery(String username);
 
@@ -24,9 +25,9 @@ public interface IConsumerService
 
     List<Consumer> getAllCosumersWithPendingQueries();
 
-    ResponseEntity<List<Vehicle>> createLoadQuery(String username, LoadQueryDto queryDto);
+    ResponseEntity<List<VehicleAndTransporterDetails>> createLoadQuery(String username, LoadQueryDto queryDto);
 
-    ResponseEntity<Vehicle> bookMyVehicle(String vehicle_number, String userId);
+    ResponseEntity<VehicleAndTransporterDetails> bookMyVehicle(String vehicle_number, String userId);
 
     ResponseFomTransporter updateRequetStatus(ResponseFomTransporter responseFomTransporter);
 

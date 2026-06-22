@@ -1,5 +1,6 @@
 package com.abhinav.ConsumerFleetHub.Services;
 
+import com.abhinav.ConsumerFleetHub.DTOs.ConsumerDto;
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
 import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
@@ -9,14 +10,14 @@ import com.abhinav.ConsumerFleetHub.Exceptions.UserNotFoundException;
 import com.abhinav.ConsumerFleetHub.Repositories.ConsumerRepository;
 import com.abhinav.ConsumerFleetHub.Repositories.LoadqueriesRepository;
 import com.abhinav.ConsumerFleetHub.Repositories.RequestRepository;
-import com.abhinav.ConsumerFleetHub.ResponseDTOs.Vehicle;
+
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetails;
 import jakarta.transaction.Transactional;
-import org.springframework.core.ParameterizedTypeReference;
+
 import org.springframework.http.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
@@ -48,27 +49,26 @@ public class ConsumerService implements IConsumerService
         this.passwordEncoder = passwordEncoder;
     }
 
-	public Consumer saveUser(Consumer consumer,String r)
+	public Consumer saveUser(ConsumerDto consumerDto, String r)
 	{
+
 		String id=UUID.randomUUID().toString();
-		consumer.setId(id);
-		Consumer c=consumerRepository.findByUsername(consumer.getUsername()).orElse(null);
+		//consumer.setId(id);
+		Consumer c=consumerRepository.findByUsername(consumerDto.getUsername()).orElse(null);
 		if(c!=null)
 		{
 			throw new UserAlreadyExistsException("User is already in DB");
 		}
-		LoadQuery lq=consumer.getQuery();
-		if(lq!=null)
-		{
-			lq.setId(UUID.randomUUID().toString());
-			lq.setConsumer(consumer);
-        }
+
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        String password = encoder.encode(consumer.getPassword());
-        consumer.setPassword(password);
+        String password = encoder.encode(consumerDto.getPassword());
         Role role = new Role();
         role.setRoleName(r);
-        consumer.setRoles(Set.of(role));
+        Consumer consumer = Consumer.builder().id(id)
+                .username(consumerDto.getUsername())
+                .password(password)
+                .roles(Set.of(role))
+                .build();
 		return consumerRepository.save(consumer);
 	}
 
@@ -110,8 +110,15 @@ public class ConsumerService implements IConsumerService
 	}
 	
 	@Transactional
-	public ResponseEntity<List<Vehicle>> createLoadQuery(String username, LoadQueryDto queryDto)
+	public ResponseEntity<List<VehicleAndTransporterDetails>> createLoadQuery(String username, LoadQueryDto queryDto)
 	{
+
+
+		Consumer c=consumerRepository.findByUsername(username).orElse(null);
+		if(c==null)
+		{
+			throw new UserNotFoundException("User not found with this username");
+		}
         LoadQuery loadQuery = LoadQuery.builder()
                 .id(UUID.randomUUID().toString())
                 .loadInTons(queryDto.getLoadInTons())
@@ -120,23 +127,15 @@ public class ConsumerService implements IConsumerService
                 .isResolved(false)
                 .status(RequestStatus.inProgress)
                 .build();
-
-
-		Consumer c=consumerRepository.findByUsername(username).orElse(null);
-		if(c==null)
-		{
-			throw new UserNotFoundException("User not found with this username");
-		}
-
 		c.setQuery(loadQuery);
 		consumerRepository.save(c);
 		//String url="http://GOOD-CARRIER/transporter/get/vehilceFromCity/"+city+"/"+loadRequired;
 		//ResponseEntity<List<Vehicle>> vehicles = restTemplate.exchange(url,HttpMethod.GET,null,new ParameterizedTypeReference<List<Vehicle>>() {});
 
-        List<Vehicle> vehicles = webClient.build().get()
-                .uri("http://Fleet-Hub/transporter/get/vehilceFromCity/{city}/{loadRequired}",queryDto.getSource(),queryDto.getLoadInTons())
+        List<VehicleAndTransporterDetails> vehicles = webClient.build().get()
+                .uri("http://Fleet-Hub/transporter/get/vehicleFromCity/{city}/{loadRequired}",queryDto.getSource(),queryDto.getLoadInTons())
                 .retrieve()
-                .bodyToFlux(Vehicle.class)
+                .bodyToFlux(VehicleAndTransporterDetails.class)
                 .collectList()
                 .block();
 
@@ -145,26 +144,25 @@ public class ConsumerService implements IConsumerService
 	}
 
 	
-	public ResponseEntity<Vehicle> bookMyVehicle(String vehicle_number, String userId)
+	public ResponseEntity<VehicleAndTransporterDetails> bookMyVehicle(String vehicle_number, String userId)
     {
-    	String url = "http://Fleet-Hub/transporter/bookMyVehicle/"+vehicle_number;
     	Consumer user = consumerRepository.findByUsername(userId).orElse(null);
     	RequestToTransporter requestToTransporter= RequestToTransporter.builder().username(user.getUsername()).loads(user.getQuery()
     			.getLoadInTons()).source(user.getQuery().getSource()).
     			destination(user.getQuery().getDestination())
     			.isAccepted(false).loadQuery(user.getQuery()).build();
+
     	LoadQuery lq = user.getQuery();
     	lq.setRequestToTransorter(requestToTransporter);
     	loadqueriesRepository.save(lq);
-    	HttpHeaders headers = new HttpHeaders();
-    	headers.setContentType(MediaType.APPLICATION_JSON);
-    	HttpEntity<RequestToTransporter> request = new HttpEntity<>(requestToTransporter, headers);
 
-        Vehicle getVehicle = webClient.build()
+        VehicleAndTransporterDetails getVehicle = webClient.build()
                 .post()
-                .uri(url)
+                .uri("http://Fleet-Hub/transporter/bookMyVehicle/{vehicle_number}",vehicle_number)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestToTransporter)
                 .retrieve()
-                .bodyToMono(Vehicle.class)
+                .bodyToMono(VehicleAndTransporterDetails.class)
                 .block();
 
     	return new ResponseEntity<>(getVehicle,HttpStatus.OK);
