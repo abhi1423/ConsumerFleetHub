@@ -11,12 +11,8 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Transporter
+public class TransporterInformation
 {
-	String id;
-	String password;
 	String username;
 	String phoneNumber;
-	String city;
-	String pincode;
 }
