@@ -1,12 +1,14 @@
 package com.abhinav.ConsumerFleetHub.Controller;
 
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
+import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
 import com.abhinav.ConsumerFleetHub.Entities.Consumer;
 import com.abhinav.ConsumerFleetHub.Entities.LoadQuery;
 import com.abhinav.ConsumerFleetHub.Entities.Role;
 import com.abhinav.ConsumerFleetHub.ResponseDTOs.Vehicle;
 import com.abhinav.ConsumerFleetHub.Services.ConsumerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,10 +55,9 @@ public class ConsumerController
 	}
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
 	@PutMapping("/create/query/{username}") 
-	public ResponseEntity<List<Vehicle>> createLoadQuery(@PathVariable String username,@RequestBody LoadQuery lq)
+	public ResponseEntity<List<Vehicle>> createLoadQuery(@PathVariable String username,@Valid @RequestBody LoadQueryDto lq)
 	{
-		ResponseEntity<List<Vehicle>> c = consumerService.createLoadQuery(username, lq);
-		return c;
+        return consumerService.createLoadQuery(username, lq);
 		
 	}
     @PreAuthorize("hasRole('ADMIN')")
@@ -87,7 +88,7 @@ public class ConsumerController
     public ResponseEntity<List<Consumer>> getUsersWithPendingQueries()
     {
     	List<Consumer> list = consumerService.getAllCosumersWithPendingQueries();
-    	return new ResponseEntity<List<Consumer>>(list,HttpStatus.OK);
+    	return new ResponseEntity<>(list,HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
