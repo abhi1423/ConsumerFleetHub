@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface IConsumerService
 {
-    Consumer saveUser(Consumer consumer);
+    Consumer saveUser(Consumer consumer,String role);
 
     Consumer removeLoadQuery(String username);
 

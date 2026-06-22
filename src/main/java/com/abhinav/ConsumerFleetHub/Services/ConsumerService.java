@@ -2,10 +2,7 @@ package com.abhinav.ConsumerFleetHub.Services;
 
 import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
 import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
-import com.abhinav.ConsumerFleetHub.Entities.Consumer;
-import com.abhinav.ConsumerFleetHub.Entities.LoadQuery;
-import com.abhinav.ConsumerFleetHub.Entities.RequestStatus;
-import com.abhinav.ConsumerFleetHub.Entities.RequestToTransporter;
+import com.abhinav.ConsumerFleetHub.Entities.*;
 import com.abhinav.ConsumerFleetHub.Exceptions.UserAlreadyExistsException;
 import com.abhinav.ConsumerFleetHub.Exceptions.UserNotFoundException;
 import com.abhinav.ConsumerFleetHub.Repositories.ConsumerRepository;
@@ -20,8 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class ConsumerService implements IConsumerService
@@ -50,7 +46,7 @@ public class ConsumerService implements IConsumerService
         this.passwordEncoder = passwordEncoder;
     }
 
-	public Consumer saveUser(Consumer consumer)
+	public Consumer saveUser(Consumer consumer,String r)
 	{
 		String id=UUID.randomUUID().toString();
 		consumer.setId(id);
@@ -68,10 +64,14 @@ public class ConsumerService implements IConsumerService
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         String password = encoder.encode(consumer.getPassword());
         consumer.setPassword(password);
+        Role role = new Role();
+        role.setRoleName(r);
+        consumer.setRoles(Set.of(role));
 		return consumerRepository.save(consumer);
 	}
 
-	public Consumer removeLoadQuery(String username)
+
+    public Consumer removeLoadQuery(String username)
 	{
 		Consumer c=consumerRepository.findByUsername(username).orElse(null);
 		if(c==null)

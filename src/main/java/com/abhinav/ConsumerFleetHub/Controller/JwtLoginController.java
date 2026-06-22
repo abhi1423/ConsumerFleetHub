@@ -32,7 +32,7 @@ public class JwtLoginController  {
 
     @GetMapping("/jwtToken")
     public ResponseEntity<JwtResponse> getJwtToken(@RequestBody UserLogin userLogin){
-
+        authenticate(userLogin);
         UserDetails userDetails = userDetailService.loadUserByUsername(userLogin.getEmail());
         String token = JwtHelper.generateToken(userDetails);
         JwtResponse jwtResponse = JwtResponse.builder().token(token).build();
