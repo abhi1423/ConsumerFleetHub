@@ -1,5 +1,6 @@
-package com.abhinav.ConsumerFleetHub.ResponseDTOs;
+package com.abhinav.ConsumerFleetHub.DTOs;
 
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.TransporterInformation;
 import lombok.*;
 
 @Getter

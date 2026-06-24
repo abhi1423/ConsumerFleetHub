@@ -1,13 +1,12 @@
 package com.abhinav.ConsumerFleetHub.Controller;
 
-import com.abhinav.ConsumerFleetHub.DTOs.ConsumerDto;
-import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
-import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
-import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
+import com.abhinav.ConsumerFleetHub.DTOs.*;
 import com.abhinav.ConsumerFleetHub.Entities.Consumer;
 import com.abhinav.ConsumerFleetHub.Entities.LoadQuery;
 import com.abhinav.ConsumerFleetHub.Entities.Role;
-import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetails;
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.CreateLoadQueryResponseDto;
+import com.abhinav.ConsumerFleetHub.DTOs.VehicleAndTransporterDetails;
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetailsResponseDto;
 import com.abhinav.ConsumerFleetHub.Services.ConsumerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,8 +48,7 @@ public class ConsumerController
 	}
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
 	@PutMapping("/create/query/{username}") 
-	public ResponseEntity<List<VehicleAndTransporterDetails>> createLoadQuery(@PathVariable String username,@Valid @RequestBody LoadQueryDto lq)
-	{
+	public ResponseEntity<CreateLoadQueryResponseDto> createLoadQuery(@PathVariable String username, @Valid @RequestBody LoadQueryDto lq) {
         return consumerService.createLoadQuery(username, lq);
 		
 	}
@@ -79,15 +77,14 @@ public class ConsumerController
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
     @GetMapping("/get/consumers/pendingQueries")
-    public ResponseEntity<List<Consumer>> getUsersWithPendingQueries()
-    {
+    public ResponseEntity<List<Consumer>> getUsersWithPendingQueries() {
     	List<Consumer> list = consumerService.getAllCosumersWithPendingQueries();
     	return new ResponseEntity<>(list,HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('CONSUMER')")
     @PostMapping("/bookVehicle/{userId}/{vehicle_number}")
-    public ResponseEntity<VehicleAndTransporterDetails> postVehicleRequest(@PathVariable String userId, @PathVariable String vehicle_number)
+    public ResponseEntity<VehicleAndTransporterDetailsResponseDto> postVehicleRequest(@PathVariable String userId, @PathVariable String vehicle_number)
     {
     	return consumerService.bookMyVehicle(vehicle_number, userId);
     }

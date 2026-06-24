@@ -1,9 +1,6 @@
 package com.abhinav.ConsumerFleetHub.Services;
 
-import com.abhinav.ConsumerFleetHub.DTOs.ConsumerDto;
-import com.abhinav.ConsumerFleetHub.DTOs.EndTrip;
-import com.abhinav.ConsumerFleetHub.DTOs.LoadQueryDto;
-import com.abhinav.ConsumerFleetHub.DTOs.ResponseFomTransporter;
+import com.abhinav.ConsumerFleetHub.DTOs.*;
 import com.abhinav.ConsumerFleetHub.Entities.*;
 import com.abhinav.ConsumerFleetHub.Exceptions.UserAlreadyExistsException;
 import com.abhinav.ConsumerFleetHub.Exceptions.UserNotFoundException;
@@ -11,7 +8,10 @@ import com.abhinav.ConsumerFleetHub.Repositories.ConsumerRepository;
 import com.abhinav.ConsumerFleetHub.Repositories.LoadqueriesRepository;
 import com.abhinav.ConsumerFleetHub.Repositories.RequestRepository;
 
-import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetails;
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.CreateLoadQueryResponseDto;
+import com.abhinav.ConsumerFleetHub.DTOs.VehicleAndTransporterDetails;
+import com.abhinav.ConsumerFleetHub.ResponseDTOs.VehicleAndTransporterDetailsResponseDto;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.transaction.Transactional;
 
 import org.springframework.http.*;
@@ -104,13 +104,13 @@ public class ConsumerService implements IConsumerService
 		return c;
 	}
 
-	public List<Consumer> getAllCosumersWithPendingQueries()
-	{
+	public List<Consumer> getAllCosumersWithPendingQueries() {
 		return consumerRepository.findUsersWithPendingQueries();
 	}
-	
+
 	@Transactional
-	public ResponseEntity<List<VehicleAndTransporterDetails>> createLoadQuery(String username, LoadQueryDto queryDto)
+    @CircuitBreaker(name = "fleetHubCB", fallbackMethod = "fallBackCreateLoadQuery")
+	public ResponseEntity<CreateLoadQueryResponseDto> createLoadQuery(String username, LoadQueryDto queryDto)
 	{
 
 
@@ -129,8 +129,7 @@ public class ConsumerService implements IConsumerService
                 .build();
 		c.setQuery(loadQuery);
 		consumerRepository.save(c);
-		//String url="http://GOOD-CARRIER/transporter/get/vehilceFromCity/"+city+"/"+loadRequired;
-		//ResponseEntity<List<Vehicle>> vehicles = restTemplate.exchange(url,HttpMethod.GET,null,new ParameterizedTypeReference<List<Vehicle>>() {});
+
 
         List<VehicleAndTransporterDetails> vehicles = webClient.build().get()
                 .uri("http://Fleet-Hub/transporter/get/vehicleFromCity/{city}/{loadRequired}",queryDto.getSource(),queryDto.getLoadInTons())
@@ -139,12 +138,16 @@ public class ConsumerService implements IConsumerService
                 .collectList()
                 .block();
 
-
-        return new ResponseEntity<>(vehicles,HttpStatus.OK);
+        CreateLoadQueryResponseDto dto = CreateLoadQueryResponseDto.builder()
+                .msg("Data fetch successfully")
+                .vehicleAndTransporterDetailsList(vehicles)
+                .status(String.valueOf(HttpStatus.OK))
+                .build();
+        return new ResponseEntity<>(dto,HttpStatus.OK);
 	}
 
-	
-	public ResponseEntity<VehicleAndTransporterDetails> bookMyVehicle(String vehicle_number, String userId)
+    @CircuitBreaker(name = "fleetHubCB", fallbackMethod = "fallBackBookMyVehicle")
+	public ResponseEntity<VehicleAndTransporterDetailsResponseDto> bookMyVehicle(String vehicle_number, String userId)
     {
     	Consumer user = consumerRepository.findByUsername(userId).orElse(null);
     	RequestToTransporter requestToTransporter= RequestToTransporter.builder().username(user.getUsername()).loads(user.getQuery()
@@ -164,8 +167,11 @@ public class ConsumerService implements IConsumerService
                 .retrieve()
                 .bodyToMono(VehicleAndTransporterDetails.class)
                 .block();
-
-    	return new ResponseEntity<>(getVehicle,HttpStatus.OK);
+        VehicleAndTransporterDetailsResponseDto dto = VehicleAndTransporterDetailsResponseDto.builder()
+                .vehicleAndTransporterDetails(getVehicle)
+                .msg("Request success")
+                .build();
+    	return new ResponseEntity<>(dto,HttpStatus.OK);
     }
 	
 	@Transactional
@@ -209,4 +215,24 @@ public class ConsumerService implements IConsumerService
 		return response;
 		
 	}
+
+    private ResponseEntity<CreateLoadQueryResponseDto> fallBackCreateLoadQuery(){
+        List<VehicleAndTransporterDetails> vehicleAndTransporterDetailsList = new ArrayList<>();
+        CreateLoadQueryResponseDto dto = CreateLoadQueryResponseDto.builder()
+                .msg("Unable to send request to fleetHub service as it is unavailable")
+                .vehicleAndTransporterDetailsList(vehicleAndTransporterDetailsList)
+                .status(String.valueOf(HttpStatus.NOT_FOUND))
+                .build();
+        return new ResponseEntity<>(dto,HttpStatus.NOT_FOUND);
+    }
+
+    public ResponseEntity<VehicleAndTransporterDetailsResponseDto> fallBackBookMyVehicle() {
+        VehicleAndTransporterDetailsResponseDto vehicleAndTransporterDetailsResponseDto =
+                VehicleAndTransporterDetailsResponseDto.builder()
+                        .msg("Service Down")
+                        .vehicleAndTransporterDetails(new VehicleAndTransporterDetails())
+                        .build();
+
+        return new ResponseEntity<>(vehicleAndTransporterDetailsResponseDto,HttpStatus.NOT_FOUND);
+    }
 }

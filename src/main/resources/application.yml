@@ -17,3 +17,12 @@ eureka:
       defaultZone: http://localhost:8761/eureka
 server:
   port: 8086
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      fleetHubCB:
+        sliding-window-size: 10
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+
